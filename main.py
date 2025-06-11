@@ -211,8 +211,7 @@ def run_fastapi():
 async def set_bot_commands(client: Client):
     """Set bot commands that will be shown in the Telegram interface"""
     commands = [
-        BotCommand("name", "Identify character name from image"),
-        BotCommand("addchar", "Add a character to database (Admin only)")
+        BotCommand("name", "Identify character name from image")
     ]
     await client.set_bot_commands(commands)
     logger.info("Bot commands have been set")
