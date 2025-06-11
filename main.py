@@ -6,9 +6,11 @@ from pyrogram import Client, filters
 from pyrogram.types import Message, BotCommand
 from pyrogram.enums import ParseMode
 from motor.motor_asyncio import AsyncIOMotorClient
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 import uvicorn
 from threading import Thread
+import asyncio
+from datetime import datetime
 
 # Load environment variables
 load_dotenv()
@@ -32,7 +34,33 @@ app = FastAPI()
 
 @app.get("/")
 async def health_check():
-    return {"status": "OK"}
+    """Health check endpoint that returns 200 OK"""
+    return Response(status_code=200)
+
+@app.get("/health")
+async def health_check_detailed():
+    """Detailed health check endpoint"""
+    try:
+        # Check MongoDB connection
+        await mongo_client.admin.command('ping')
+        db_status = "healthy"
+    except Exception as e:
+        logger.error(f"MongoDB health check failed: {e}")
+        db_status = "unhealthy"
+
+    # Check Pyrogram client
+    try:
+        pyrogram_status = "healthy" if app.is_connected else "unhealthy"
+    except Exception as e:
+        logger.error(f"Pyrogram health check failed: {e}")
+        pyrogram_status = "unhealthy"
+
+    return {
+        "status": "OK",
+        "database": db_status,
+        "bot": pyrogram_status,
+        "timestamp": datetime.now().isoformat()
+    }
 
 # Initialize MongoDB client
 mongo_client = AsyncIOMotorClient(MONGODB_URL)
@@ -206,12 +234,21 @@ async def add_character(client: Client, message: Message):
         )
 
 def run_fastapi():
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    """Run FastAPI server with proper configuration"""
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", 8000)),
+        workers=1,
+        log_level="info",
+        reload=False
+    )
 
 async def set_bot_commands(client: Client):
     """Set bot commands that will be shown in the Telegram interface"""
     commands = [
-        BotCommand("name", "Identify character name from image")
+        BotCommand("name", "Identify character name from image"),
+        BotCommand("addchar", "Add a character to database (Admin only)")
     ]
     await client.set_bot_commands(commands)
     logger.info("Bot commands have been set")
@@ -219,6 +256,7 @@ async def set_bot_commands(client: Client):
 if __name__ == "__main__":
     # Start FastAPI in a separate thread
     fastapi_thread = Thread(target=run_fastapi)
+    fastapi_thread.daemon = True  # Make thread daemon so it exits when main thread exits
     fastapi_thread.start()
     
     # Set bot commands before running
