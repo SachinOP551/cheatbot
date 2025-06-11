@@ -1,6 +1,7 @@
 pyrogram==2.0.106
 tgcrypto==1.2.5
-motor==3.3.1
+motor==2.5.1
+pymongo==3.12.3
 python-dotenv==1.0.0
 fastapi==0.104.1
-uvicorn==0.24.0 
+uvicorn==0.24.0
