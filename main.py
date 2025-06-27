@@ -176,7 +176,7 @@ async def name_command(client: Client, message: Message):
             response = (
                 f"🔍 Character identified!\n\n"
                 f"👤 Character name: {character['name']}\n"
-                f"🆔 ID: {character['char_id']}\n\n"
+                f"🆔 ID: {character.get('char_id', character.get('character_id', 'Unknown'))}\n\n"
                 f"💡 Use: `/collect {character['name']}`"
             )
             await message.reply_text(response, parse_mode=ParseMode.MARKDOWN)
