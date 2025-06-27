@@ -64,7 +64,7 @@ async def health_check_detailed():
 
 # Initialize MongoDB client
 mongo_client = AsyncIOMotorClient(MONGODB_URL)
-db = mongo_client.character_db
+db = mongo_client.marvel_collector
 characters = db.characters
 
 # Initialize Pyrogram client
