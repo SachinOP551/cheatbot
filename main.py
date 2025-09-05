@@ -64,63 +64,8 @@ async def health_check_detailed():
 
 # Initialize MongoDB client
 mongo_client = AsyncIOMotorClient(MONGODB_URL)
-db = mongo_client.cheatbot_db
-
-# Initialize collections for different character types
-marvel_collection = db.marvel_collector
-anime_collection = db.anime
-pokemon_collection = db.pokemon
-
-# Dictionary to map collection names to collection objects
-collections = {
-    "marvel": marvel_collection,
-    "anime": anime_collection,
-    "pokemon": pokemon_collection
-}
-
-
-# Unified characters interface that searches across multiple collections for reads,
-# updates the collection where the document exists, and inserts into a primary collection.
-class UnifiedCharacters:
-    def __init__(self, primary_collection, search_collections):
-        self.primary_collection = primary_collection
-        self.search_collections = search_collections
-
-    async def find_one(self, query):
-        # Check primary collection first
-        document = await self.primary_collection.find_one(query)
-        if document:
-            return document
-        # Then check the other collections
-        for collection in self.search_collections:
-            document = await collection.find_one(query)
-            if document:
-                return document
-        return None
-
-    async def update_one(self, query, update):
-        # Determine which collection contains the document
-        target_collection = self.primary_collection
-        document = await self.primary_collection.find_one(query)
-        if not document:
-            for collection in self.search_collections:
-                document = await collection.find_one(query)
-                if document:
-                    target_collection = collection
-                    break
-        return await target_collection.update_one(query, update)
-
-    async def insert_one(self, document):
-        # Always insert into the primary collection
-        return await self.primary_collection.insert_one(document)
-
-
-# Expose a `characters` helper compatible with existing calls
-characters = UnifiedCharacters(
-    primary_collection=db.characters,
-    search_collections=[marvel_collection, anime_collection, pokemon_collection]
-)
-
+db = mongo_client.pokemon
+characters = db.characters
 
 # Initialize Pyrogram client
 app = Client(
@@ -134,13 +79,13 @@ def extract_character_info(text: str) -> dict:
     """Extract character information from message text"""
     try:
         # Extract name
-        name_match = re.search(r"👤\s*ɴᴀᴍᴇ:\s*([^\n]+)", text)
+        name_match = re.search(r"👤\s*Name:\s*([^\n]+)", text)
         if not name_match:
             return None
         name = name_match.group(1).strip()
 
         # Extract ID
-        id_match = re.search(r"🆔\s*ɪᴅ:\s*(\d+)", text)
+        id_match = re.search(r"🆔\s*ID:\s*(\d+)", text)
         if not id_match:
             return None
         char_id = int(id_match.group(1))
@@ -319,3 +264,5 @@ if __name__ == "__main__":
     
     # Run the bot
     app.run() 
+
+
